@@ -31,7 +31,7 @@ fi
 tag=latest
 
 if [ "$3" == "ubuntu" ] || [ ! -n "$3" ]; then
-docker run -it \
+docker run -itd \
     --restart=always \
     --cap-add=SYS_PTRACE \
     --security-opt seccomp=unconfined \
@@ -45,7 +45,7 @@ docker run -it \
     horizontal_fl:${tag} \
     bash
 elif [ "$4" == "anolisos" ]; then
-docker run -it \
+docker run -itd \
     --restart=always \
     --cap-add=SYS_PTRACE \
     --security-opt seccomp=unconfined \
