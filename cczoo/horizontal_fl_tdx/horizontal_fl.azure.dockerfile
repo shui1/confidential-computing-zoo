@@ -110,7 +110,7 @@ ENV SGX_RA_TLS_BACKEND=TDX
 WORKDIR ${TF_BUILD_PATH}
 RUN bazel build -c opt //tensorflow/tools/pip_package:build_pip_package
 WORKDIR ${TF_BUILD_PATH}
-RUN bazel-bin/tensorflow/tools/pip_package/build_pip_package ${TF_BUILD_OUTPUT} && pip install --no-cache-dir ${TF_BUILD_OUTPUT}/tensorflow-*-cp36-cp36m-linux_x86_64.whl
+RUN bazel-bin/tensorflow/tools/pip_package/build_pip_package ${TF_BUILD_OUTPUT} && pip install --no-cache-dir ${TF_BUILD_OUTPUT}/tensorflow-*.whl
 RUN pip install --no-cache-dir keras==2.6
 
 # download and exact cifar-10 dataset
