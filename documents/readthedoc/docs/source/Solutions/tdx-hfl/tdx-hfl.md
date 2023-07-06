@@ -106,12 +106,8 @@ tf.app.flags.DEFINE_string("worker_hosts", "['localhost:61002','localhost:61003'
 1. You need to modify the `localhost` fields in the above code segment to the IP address of the VMs where the training script is actually deployed.
 2. Make sure that the port number configured on the current node has been enabled on the corresponding VM.
 
-### Create encrypted directories
-In the Docker environment of each computing node, an encrypted directory needs to be created to store model files to ensure the security of the model files.
-
-Execute the following commands in each of the three Docker environments:
-
-create luks block file and bind it to a idle loop device:
+### Create Encrypted Storage
+For each container, create an encrypted storage to store the model files. When prompted for confirmation, type 'YES':
 
 ```shell
 cd /luks_tools
