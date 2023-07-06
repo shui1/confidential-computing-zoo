@@ -44,8 +44,8 @@ else
 fi
 
 DOCKER_BUILDKIT=0 docker build \
-    -f horizontal_fl.${build_type}.dockerfile . \
-    -t horizontal_fl:${build_type}_${tag} \
+    -f horizontal_fl_tdx.${build_type}.dockerfile . \
+    -t horizontal_fl_tdx:${build_type}_${tag} \
     --network=host \
     --build-arg http_proxy=${proxy_server} \
     --build-arg https_proxy=${proxy_server} \
