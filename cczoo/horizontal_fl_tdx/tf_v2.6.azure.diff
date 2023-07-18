@@ -136,7 +136,7 @@ index 3e66023a149..924d855e924 100644
 +        strip_prefix = "grpc-1.38.1",
          system_build_file = "//third_party/systemlibs:grpc.BUILD",
 -        patch_file = "//third_party/grpc:generate_cc_env_fix.patch",
-+        patch_file = "//third_party/grpc:grpc_ratls.patch",
++        patch_file = "//third_party/grpc:grpc_ratls.azure.patch",
          system_link_files = {
              "//third_party/systemlibs:BUILD": "bazel/BUILD",
              "//third_party/systemlibs:grpc.BUILD": "src/compiler/BUILD",
@@ -201,4 +201,19 @@ index 8ce4a843759..00000000000
 -     if not ctx.attr.gen_cc and not ctx.attr.gen_py and not ctx.executable.plugin:
 -         return struct(
 \ No newline at end of file
+diff --git a/third_party/py/python_configure.bzl b/third_party/py/python_configure.bzl
+index 2f75262ea9f..8cccdab5aaa 100644
+--- a/third_party/py/python_configure.bzl
++++ b/third_party/py/python_configure.bzl
+@@ -189,9 +189,7 @@ def _get_numpy_include(repository_ctx, python_bin):
+         [
+             python_bin,
+             "-c",
+-            "from __future__ import print_function;" +
+-            "import numpy;" +
+-            " print(numpy.get_include());",
++            "print('/usr/local/lib/python3.8/dist-packages/numpy/core/include');",
+         ],
+         error_msg = "Problem getting numpy include path.",
+         error_details = "Is numpy installed?",
 
