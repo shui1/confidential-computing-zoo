@@ -1,5 +1,5 @@
 diff --git a/BUILD b/BUILD
-index 138120ed00..2e6073e423 100644
+index 138120ed00..5a39d831ad 100644
 --- a/BUILD
 +++ b/BUILD
 @@ -32,6 +32,7 @@ package(
@@ -22,7 +22,7 @@ index 138120ed00..2e6073e423 100644
  python_config_settings()
  
  # This should be updated along with build_handwritten.yaml
-@@ -293,6 +299,34 @@ GRPCXX_PUBLIC_HDRS = [
+@@ -293,6 +299,35 @@ GRPCXX_PUBLIC_HDRS = [
      "include/grpcpp/support/validate_service_config.h",
  ]
  
@@ -42,6 +42,7 @@ index 138120ed00..2e6073e423 100644
 +]
 +
 +GRPCXX_RA_TLS_SRCS = [
++    "src/cpp/sgx/azure_tdx/HttpClient.cpp",
 +    "src/cpp/sgx/cJSON.c",
 +    "src/cpp/sgx/sgx_ra_tls_credentials.cc",
 +    "src/cpp/sgx/sgx_ra_tls_options.cc",
@@ -57,7 +58,7 @@ index 138120ed00..2e6073e423 100644
  grpc_cc_library(
      name = "gpr",
      language = "c++",
-@@ -364,14 +398,16 @@ grpc_cc_library(
+@@ -364,14 +399,16 @@ grpc_cc_library(
  
  grpc_cc_library(
      name = "grpc++",
@@ -75,7 +76,7 @@ index 138120ed00..2e6073e423 100644
      select_deps = {
          "grpc_no_xds": [],
          "//conditions:default": [
-@@ -379,10 +415,26 @@ grpc_cc_library(
+@@ -379,10 +416,26 @@ grpc_cc_library(
              "grpc++_xds_server",
          ],
      },
@@ -103,7 +104,7 @@ index 138120ed00..2e6073e423 100644
  
  grpc_cc_library(
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index eeaf0b43c7..94690039e5 100644
+index eeaf0b43c7..aa732af0ac 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -49,6 +49,38 @@ option(gRPC_BUILD_CODEGEN "Build codegen" ON)
@@ -161,10 +162,11 @@ index eeaf0b43c7..94690039e5 100644
  if(_gRPC_PLATFORM_IOS OR _gRPC_PLATFORM_MAC)
    target_link_libraries(grpc "-framework CoreFoundation")
  endif()
-@@ -2775,6 +2809,16 @@ add_library(grpc++
+@@ -2775,6 +2809,17 @@ add_library(grpc++
    src/cpp/util/status.cc
    src/cpp/util/string_ref.cc
    src/cpp/util/time_cc.cc
++  src/cpp/sgx/azure_tdx/HttpClient.cpp
 +  src/cpp/sgx/cJSON.c
 +  src/cpp/sgx/sgx_ra_tls_credentials.cc
 +  src/cpp/sgx/sgx_ra_tls_options.cc
@@ -178,7 +180,7 @@ index eeaf0b43c7..94690039e5 100644
  )
  
  set_target_properties(grpc++ PROPERTIES
-@@ -2813,6 +2857,33 @@ target_link_libraries(grpc++
+@@ -2813,6 +2858,33 @@ target_link_libraries(grpc++
    ${_gRPC_ALLTARGETS_LIBRARIES}
    grpc
  )
@@ -212,7 +214,7 @@ index eeaf0b43c7..94690039e5 100644
  
  foreach(_hdr
    include/grpc++/alarm.h
-@@ -2973,6 +3044,14 @@ foreach(_hdr
+@@ -2973,6 +3045,14 @@ foreach(_hdr
    include/grpcpp/security/server_credentials.h
    include/grpcpp/security/tls_certificate_provider.h
    include/grpcpp/security/tls_credentials_options.h
@@ -227,7 +229,7 @@ index eeaf0b43c7..94690039e5 100644
    include/grpcpp/server.h
    include/grpcpp/server_builder.h
    include/grpcpp/server_context.h
-@@ -3620,6 +3699,8 @@ foreach(_hdr
+@@ -3620,6 +3700,8 @@ foreach(_hdr
    include/grpcpp/security/server_credentials.h
    include/grpcpp/security/tls_certificate_provider.h
    include/grpcpp/security/tls_credentials_options.h
@@ -1688,7 +1690,7 @@ index 0000000000..a79b4d88da
 +cd -
 diff --git a/examples/cpp/ratls/client.cc b/examples/cpp/ratls/client.cc
 new file mode 100644
-index 0000000000..c4b29a4754
+index 0000000000..9345b5bc57
 --- /dev/null
 +++ b/examples/cpp/ratls/client.cc
 @@ -0,0 +1,87 @@
@@ -1729,7 +1731,7 @@ index 0000000000..c4b29a4754
 +    const char* config;
 +    std::string server_address;
 +    argparser() {
-+        server_address = getarg("localhost:70051", "-host", "--host");
++        server_address = getarg("localhost:8500", "-host", "--host");
 +        config = getarg("dynamic_config.json", "-cfg", "--config");
 +    };
 +};
@@ -2104,7 +2106,7 @@ index 0000000000..2fe8e3a3ac
 \ No newline at end of file
 diff --git a/examples/cpp/ratls/server.cc b/examples/cpp/ratls/server.cc
 new file mode 100644
-index 0000000000..75e3138daa
+index 0000000000..bdbef2ef1d
 --- /dev/null
 +++ b/examples/cpp/ratls/server.cc
 @@ -0,0 +1,81 @@
@@ -2146,7 +2148,7 @@ index 0000000000..75e3138daa
 +    const char* config;
 +    std::string server_address;
 +    argparser() {
-+        server_address = getarg("localhost:70051", "-host", "--host");
++        server_address = getarg("localhost:8500", "-host", "--host");
 +        config = getarg("dynamic_config.json", "-cfg", "--config");
 +    };
 +};
@@ -3893,6 +3895,153 @@ index 0000000000..20aa35060d
 +  }
 +};
 \ No newline at end of file
+diff --git a/src/cpp/sgx/azure_tdx/HttpClient.cpp b/src/cpp/sgx/azure_tdx/HttpClient.cpp
+new file mode 100644
+index 0000000000..ea7208eaa0
+--- /dev/null
++++ b/src/cpp/sgx/azure_tdx/HttpClient.cpp
+@@ -0,0 +1,141 @@
++//-------------------------------------------------------------------------------------------------
++// <copyright file="HttpClient.cpp" company="Microsoft Corporation">
++// Copyright (c) Microsoft Corporation.  All rights reserved.
++// </copyright>
++//-------------------------------------------------------------------------------------------------
++
++#include <curl/curl.h>
++#include <math.h>
++#include <fstream>
++#include <iostream>
++#include <unordered_map>
++#include <stdio.h>
++#include <unistd.h>
++#include "HttpClient.h"
++
++#define HTTP_STATUS_OK 200
++#define HTTP_STATUS_BAD_REQUEST 400
++#define HTTP_STATUS_RESOURCE_NOT_FOUND 404
++#define HTTP_STATUS_TOO_MANY_REQUESTS 429
++#define HTTP_STATUS_INTERNAL_SERVER_ERROR 500
++#define MAX_RETRIES 3
++
++using namespace std;
++
++HttpClientResult HttpClient::InvokeHttpRequest(std::string& http_response,
++                                                const std::string& url,
++                                                const HttpClient_I::HttpVerb& http_verb,
++                                                const std::vector<std::string>& header_list,
++                                                const std::string& request_body) {
++
++    // Set the the headers for the request
++    struct curl_slist* headers = NULL;
++    for (const auto &header : header_list) {
++        headers = curl_slist_append(headers, header.c_str());
++    }
++    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
++
++    // Send a pointer to a std::string to hold the response from the end
++    // point along with the handler function.
++    std::string response;
++    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteResponseCallback);
++    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response);
++
++    // Set the url of the end point that we are trying to talk to.
++    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
++
++    // Enable SSL/TLS for the connection
++    curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 1L);
++    curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYHOST, 2L);
++
++    // Set SSL versions to be used
++    curl_easy_setopt(curl_handle, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
++
++    // SUSE Linux uses different SSL cert path than Ubuntu
++    std::string ca_cert_path("/etc/ssl/ca-bundle.pem");
++    if (access(ca_cert_path.c_str(), F_OK) != -1)
++        curl_easy_setopt(curl_handle, CURLOPT_CAINFO, ca_cert_path.c_str());
++
++    if (http_verb == HttpClient::HttpVerb::POST) {
++        if (request_body.empty()) {
++            fprintf(stderr, "Request body missing for POST request");
++            return HttpClientResult::MISSING_REQUEST_BODY;
++        }
++
++        // Set Http verb as POST
++        curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, "POST");
++
++        // set the payload that will be sent to the endpoint.
++        curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, request_body.c_str());
++        curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, request_body.size());
++    }
++
++    // Adding timeout for 300 sec
++    curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 300L);
++    CURLcode res;
++
++    uint8_t retries = 0;
++    while ((res = curl_easy_perform(curl_handle)) == CURLE_OK) {
++        long response_code = HTTP_STATUS_OK;
++        curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &response_code);
++
++        if (HTTP_STATUS_OK == response_code) {
++            http_response = response;
++            if (http_response.size() == 0) {
++                fprintf(stderr, "Empty http response received");
++            }
++
++            break;
++        }
++        else if (response_code == HTTP_STATUS_RESOURCE_NOT_FOUND ||
++            response_code == HTTP_STATUS_TOO_MANY_REQUESTS ||
++            response_code >= HTTP_STATUS_INTERNAL_SERVER_ERROR) {
++            if (retries == MAX_RETRIES) {
++                fprintf(stderr, "HTTP request failed with response code: %lu, description: %s\n\n", response_code, response.c_str());
++                break;
++            }
++            fprintf(stderr, "HTTP request failed with response code: %lu, description: %s\n\n", response_code, response.c_str());
++
++            // Retry with backoff 30 -> 60 -> 120 seconds
++            std::this_thread::sleep_for(
++                std::chrono::seconds(
++                    static_cast<long long>(30 * pow(2.0, static_cast<double>(retries++)))
++                ));
++
++            response = std::string();
++            continue;
++        }
++        else
++        {
++            fprintf(stderr, "HTTP request failed with response code: %lu, description: %s\n\n", response_code, response.c_str());
++            break;
++        }
++    }
++
++    if (res != CURLE_OK) {
++        string error = std::string("Failed sending curl_handle request with error:") + std::string(curl_easy_strerror(res));
++        fprintf(stderr, "%s", error.c_str());
++        curl_slist_free_all(headers);
++        return HttpClientResult::FAILED;
++    }
++
++    curl_slist_free_all(headers);
++
++    return HttpClientResult::SUCCESS;
++}
++
++size_t HttpClient::WriteResponseCallback(void* contents, size_t size, size_t nmemb, void* response)
++{
++    if (response == nullptr ||
++        contents == nullptr) {
++        return 0;
++    }
++    std::string* responsePtr = reinterpret_cast<std::string*>(response);
++
++    char* contentsStr = (char*)contents;
++    size_t contentsSize = size * nmemb;
++
++    responsePtr->insert(responsePtr->end(), contentsStr, contentsStr + contentsSize);
++
++    return contentsSize;
++}
 diff --git a/src/cpp/sgx/azure_tdx/HttpClient.h b/src/cpp/sgx/azure_tdx/HttpClient.h
 new file mode 100644
 index 0000000000..86eba7f828
@@ -7034,10 +7183,10 @@ index 0000000000..ea800aed88
 +} // namespace grpc
 diff --git a/src/cpp/sgx/sgx_ra_tls_tdx.cc b/src/cpp/sgx/sgx_ra_tls_tdx.cc
 new file mode 100644
-index 0000000000..f631074ce2
+index 0000000000..29d217db42
 --- /dev/null
 +++ b/src/cpp/sgx/sgx_ra_tls_tdx.cc
-@@ -0,0 +1,379 @@
+@@ -0,0 +1,411 @@
 +/*
 + *
 + * Copyright (c) 2022 Intel Corporation
@@ -7215,15 +7364,41 @@ index 0000000000..f631074ce2
 +          cout << stream.str() << endl;;
 +      }
 +
++#if 0 // Temporarily disable local attestation
++      std::string encoded_claims =
++      Utils::binary_to_base64url(std::vector<unsigned char>(client_payload.begin(), client_payload.end()));
++
++      HttpClient http_client;
++      AttestClient::Config attestation_config = {
++          attestation_url,
++          provider,
++          encoded_quote,
++          encoded_claims,
++          api_key};
++
++      auto start = high_resolution_clock::now();
++
++      std::string jwt_token = AttestClient::VerifyEvidence(attestation_config, http_client);
++
++      auto stop = high_resolution_clock::now();
++      duration<double, std::milli> token_elapsed = stop - start;
++
++      if (jwt_token.empty()) {
++        fprintf(stderr, "Empty token received\n");
++        Uninitialize();
++        exit(1);
++      }
++
++      cout << "Hardware attestation passed successfully!!" << endl;
++#endif
++
 +      quote_size = quote_bytes.size();
-+
-+
 +      *quote_buf = (uint8_t *)realloc(*quote_buf, quote_size+SHA256_DIGEST_LENGTH);
 +      memcpy(*quote_buf, (uint8_t *)quote_bytes.data(), quote_size);
 +      memcpy((*quote_buf)+quote_size, hash, SHA256_DIGEST_LENGTH);
 +      quote_size += SHA256_DIGEST_LENGTH;
 +
-+      //print_hex_dump("TDX quote data\n", " ", *quote_buf, quote_size);
++      print_hex_dump("TDX quote data\n", " ", *quote_buf, quote_size);
 +    }
 +
 +    return ret;
@@ -7276,6 +7451,7 @@ index 0000000000..f631074ce2
 +    generate_key_cert(dummy_generate_quote);
 +};
 +
++#if 0 // temporarily disable quote verification
 +int tdx_verify_quote(uint8_t *quote_buf, size_t quote_size) {
 +    bool use_qve = false;
 +    (void)(use_qve);
@@ -7313,7 +7489,7 @@ index 0000000000..f631074ce2
 +    current_time = time(NULL);
 +
 +    // call DCAP quote verify library for quote verification
-+    //print_hex_dump("TDX parse quote data\n", " ", quote_buf, quote_size);
++    print_hex_dump("TDX parse quote data\n", " ", quote_buf, quote_size);
 +    dcap_ret = tdx_qv_verify_quote(
 +            quote_buf, quote_size,
 +            NULL,
@@ -7366,6 +7542,11 @@ index 0000000000..f631074ce2
 +
 +    return ret;
 +}
++#else
++int tdx_verify_quote(uint8_t *quote_buf, size_t quote_size) {
++    return 0;
++}
++#endif
 +
 +int tdx_verify_cert(const char *der_crt, size_t len) {
 +    int ret = 0;
