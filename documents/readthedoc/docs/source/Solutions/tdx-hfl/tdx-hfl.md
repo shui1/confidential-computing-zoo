@@ -151,7 +151,7 @@ Format block device to ext4:
 Mount encrypted storage:
 
 ```shell
-./unmount_encrypted_vfs.sh ${VIRTUAL_FS} ${ROLE}
+./unmount_encrypted_vfs.sh ${ROLE}
 ./mount_encrypted_vfs.sh ${LOOP_DEVICE} notformat ${ROLE}
 ```
 
@@ -196,10 +196,9 @@ Training is completed when both worker containers display the following output: 
 After training is complete, unmount the storage. Replace `<role>` with the role of the container (either `ps0`, `worker0`, or `worker1`). 
 
 ```shell
-ROLE=<role>
-VIRTUAL_FS=/root/vfs
+export ROLE=<role>
 cd /luks_tools
-./unmount_encrypted_vfs.sh ${VIRTUAL_FS} ${ROLE}
+./unmount_encrypted_vfs.sh ${ROLE}
 ```
 
 ### Transfer Encrypted Model Files To Trusted Node
@@ -208,11 +207,11 @@ Transfer the LUKS encrypted partition (`/root/vfs`) of the parameter server to a
 From the trusted node, decrypt the encrypted storage. Replace `<path to vfs file>` with the path to the vfs file.
 
 ```shell
-VIRTUAL_FS=<path to vfs file>
+export VIRTUAL_FS=<path to vfs file>
 export LOOP_DEVICE=$(losetup -f)
 losetup ${LOOP_DEVICE} ${VIRTUAL_FS}
 cryptsetup luksOpen ${LOOP_DEVICE} model
-mkdir /root/model
+mkdir -p /root/model
 mount /dev/mapper/model /root/model
 ```
 
