@@ -202,13 +202,13 @@ cd /luks_tools
 ./unmount_encrypted_vfs.sh ${VIRTUAL_FS} ${ROLE}
 ```
 
-### Get model files on trusted node
-After transferring the LUKS encrypted partition (`/root/vfs`) to the customer's trusted environment, decrypt it in the trusted node and obtain the model file.
+### Transfer Encrypted Model Files To Trusted Node
+Transfer the LUKS encrypted partition (`/root/vfs`) of the parameter server to a trusted node.
 
-If the path of the encrypted partition in the trusted node is `/root/vfs`, the command to decrypt and obtain the model file is as follows:
+From the trusted node, decrypt the encrypted storage. Replace `<path to vfs file>` with the path to the vfs file.
 
 ```shell
-VIRTUAL_FS=/root/vfs
+VIRTUAL_FS=<path to vfs file>
 export LOOP_DEVICE=$(losetup -f)
 losetup ${LOOP_DEVICE} ${VIRTUAL_FS}
 cryptsetup luksOpen ${LOOP_DEVICE} model
@@ -216,7 +216,7 @@ mkdir /root/model
 mount /dev/mapper/model /root/model
 ```
 
-Finally, the decrypted model file is obtained on the trusted node:
+The decrypted model files can now be obtained on the trusted node:
 
 ```shell
 ls /root/model
@@ -238,3 +238,15 @@ Chinese version: https://www.alibabacloud.com/help/zh/elastic-compute-service/la
 English version：https://www.alibabacloud.com/help/en/elastic-compute-service/latest/build-a-tdx-confidential-computing-environment
 
 ***Notice:*** Ali TDX instance is under external public preview.
+
+### 2. Microsoft Azure
+
+Microsoft Azure [DCesv5-series](https://azure.microsoft.com/en-us/updates/confidential-vms-with-intel-tdx-dcesv5-ecesv5/) instances support Intel® TDX confidential computing technology.
+
+The following is the configuration of the DCesv5-series instance used:
+
+- Instance Type  : Standard_DC16es_v5
+- Instance Kernel: 6.2.0-1008-azure
+- Instance OS    : Ubuntu 22.04 LTS Gen 2 TDX
+
+***Notice:*** Azure DCesv5-series instances were used under private preview.
