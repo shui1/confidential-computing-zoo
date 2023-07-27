@@ -1,6 +1,6 @@
 # Horizontal Federated Learning with Intel TDX
 
-This solution presents a framework for developing a PPML(Privacy-Preserving Machine Learning) solution based on TensorFlow - Horizontal Federated Learning with Intel TDX.
+This solution presents a framework for developing a PPML (Privacy-Preserving Machine Learning) solution based on TensorFlow - Horizontal Federated Learning with Intel TDX.
 
 ## Introduction
 
