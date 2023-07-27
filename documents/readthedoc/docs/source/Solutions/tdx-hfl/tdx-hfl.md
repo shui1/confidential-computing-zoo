@@ -107,7 +107,7 @@ tf.app.flags.DEFINE_string("worker_hosts", "['localhost:61002','localhost:61003'
 2. Make sure that the port number configured on the current node has been enabled on the corresponding VM.
 
 ### Create Encrypted Storage
-For each container, create an encrypted storage to store the model files. When prompted for confirmation, type 'YES':
+For each container, create encrypted storage to store the model files. When prompted for confirmation, type 'YES'. Take note of the loop device output by `create_encrypted_vfs.sh`.
 
 ```shell
 cd /luks_tools
@@ -115,23 +115,24 @@ VIRTUAL_FS=/root/vfs
 ./create_encrypted_vfs.sh ${VIRTUAL_FS}
 ```
 
-According to the loop device number (such as `\dev\loop0`) output by the above command, create the LOOP_DEVICE environment variable to bind the loop device:
-
+Replace `<loop device>` with the loop device output by `create_encrypted_vfs.sh` (`\dev\loop0` for example).
+Replace `<role>` with the role of the container (either `ps0`, `worker0`, or `worker1`).
 ```shell
-export LOOP_DEVICE=<the binded loop device>
+export LOOP_DEVICE=<loop device>
+export ROLE=<role>
 ```
 
 The block loop device needs to be formatted to ext4 for the first execution.
 
 ```shell
-./mount_encrypted_vfs.sh ${LOOP_DEVICE} format
+./mount_encrypted_vfs.sh ${LOOP_DEVICE} format ${ROLE}
 ```
 
 Mount by password:
 
 ```shell
-./unmount_encrypted_vfs.sh ${VIRTUAL_FS}
-./mount_encrypted_vfs.sh ${LOOP_DEVICE} notformat
+./unmount_encrypted_vfs.sh ${VIRTUAL_FS} ${ROLE}
+./mount_encrypted_vfs.sh ${LOOP_DEVICE} notformat ${ROLE}
 ```
 
 ### Run the training scripts
@@ -170,11 +171,12 @@ Info: App: Verification completed successfully.
 
 The model files generated during training will be saved in the `model` folder. In this example, the information related to variable values is stored in `model/model.ckpt-data` of `ps0`, and the information related to the computational graph structure is stored in `model/model.ckpt-meta` of `worker0`.
 
-Unmount after training is complete:
+After training is complete, unmount the storage. Replace `<role>` with the role of the container (either `ps0`, `worker0`, or `worker1`). 
 
 ```shell
+export ROLE=<role>
 cd /luks_tools
-./unmount_encrypted_vfs.sh ${VIRTUAL_FS}
+./unmount_encrypted_vfs.sh ${VIRTUAL_FS} ${ROLE}
 ```
 
 ### Get model files on trusted node
