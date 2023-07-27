@@ -4,11 +4,11 @@ This solution presents a framework for developing a PPML (Privacy-Preserving Mac
 
 ## Introduction
 
-How to ensure the privacy of participants in the distributed training process of deep neural networks is a current hot topic. Federated learning can solve the problem to a certain extent. In horizontal federated learning, each participant uses its own local data for algorithm iteration and only uploads gradient information instead of raw data, which guarantees data privacy to a large extent.
+How to ensure the privacy of participants in the distributed training process of deep neural networks is a current hot topic. Federated learning can solve the problem to a certain extent. In horizontal federated learning, each participant uses its own local data for algorithm iteration and only uploads gradient information instead of raw data, which guarantees data privacy to a considerable extent.
 
 The commonly used encryption method in federated learning is Homomorphic Encryption(HE). In addition to HE, trusted execution environment (TEE) technology uses plaintext for calculation and uses a trusted computing base to ensure security. Intel TDX technology is a concrete realization of TEE technology. In this horizontal federated learning solution, we adopted a privacy protection computing solution based on Intel TDX technology.
 
-This solution mainly include the following three aspects: 
+This solution includes the following three aspects: 
 -	RA-TLS enhanced gRPC - The RA-TLS technology is integrated in the gRPC framework to ensure the security of data transmission and enable remote verification technology.
 -	Federated training – Propose a federated training solution based on Intel TDX and RA-TLS technology.
 -	Model Protection – Using LUKS to protect model confidentiality and integrity during model training and model transfer. 
@@ -53,11 +53,11 @@ The training phase can be divided into the following steps:
 &emsp;&ensp;**⑦** Repeat steps **②**-**⑥** until the end of training. Finally, the training model directory is transmitted to the remote trusted node and finally decrypted.
 
 ## Horizontal Federated Training Execution
-We provide an image classification training task and it uses the cifar-10 dataset to train the ResNet network.
+This reference solution trains the ResNet-50 image classification model using the CIFAR-10 dataset.
 
 ### Prerequisites
 - Intel TDX capable systems/VMs
-- Docker Engine. Docker Engine is an open source containerization technology for building and containerizing your applications.
+- Docker Engine. Docker Engine is an open-source containerization technology for building and containerizing your applications.
   Please follow this [guide](https://docs.docker.com/engine/install/ubuntu/#install-using-the-convenience-script)
   to install Docker engine. It is recommended to use a data disk of at least 128GB for the docker daemon data directory. This [guide](https://docs.docker.com/config/daemon/#daemon-data-directory) describes how to configure the docker daemon data directory. If behind a proxy server, please refer to this [guide](https://docs.docker.com/config/daemon/systemd/) for configuring the docker daemon proxy settings.
 
@@ -71,7 +71,7 @@ We provide an image classification training task and it uses the cifar-10 datase
 
 - Framework: TensorFlow 2.6.0
 - Model: ResNet-50
-- Dataset: Cifar-10
+- Dataset: CIFAR-10
 - Parameter Server num: 1
 - Worker num: 2
 - Total containers: 3
@@ -105,7 +105,7 @@ export ROLE=<role>
 ```
 
 ### Configure Node Network Addresses
-In the case of deploying different distributed nodes on multiple VMs, you can configure the distributed node IP address by modifying the `train.py` training script in the `/hfl-tensorflow` directory in the Docker container:
+In the case of deploying different distributed nodes on multiple VMs, you can configure the node IP addresses by modifying the `/hfl-tensorflow/train.py` in each container:
 
 ```shell
 tf.app.flags.DEFINE_string("ps_hosts", "['localhost:60002']", "ps hosts")
@@ -114,7 +114,7 @@ tf.app.flags.DEFINE_string("worker_hosts", "['localhost:61002','localhost:61003'
 
 ***Notice:***
 
-1. You need to modify the `localhost` fields in the above code segment to the IP address of the VMs where the training script is actually deployed.
+1. You need to modify the `localhost` fields in the above code segment to the IP address of the VMs where the training script is deployed.
 2. Make sure that the port number configured on the current node has been enabled on the corresponding VM.
 
 ### Configure Attestation Parameters
@@ -152,7 +152,7 @@ Mount encrypted storage:
 
 ```shell
 ./unmount_encrypted_vfs.sh ${ROLE}
-./mount_encrypted_vfs.sh ${LOOP_DEVICE} notformat ${ROLE}
+./mount_encrypted_vfs.sh ${LOOP_DEVICE} noformat ${ROLE}
 ```
 
 ### Run Training Scripts
@@ -201,7 +201,7 @@ cd /luks_tools
 ./unmount_encrypted_vfs.sh ${ROLE}
 ```
 
-### Transfer Encrypted Model Files To Trusted Node
+### Transfer Encrypted Model Files to Trusted Node
 Transfer the LUKS encrypted partition (`/root/vfs`) of the parameter server to a trusted node.
 
 From the trusted node, decrypt the encrypted storage. Replace `<path to vfs file>` with the path to the vfs file.
