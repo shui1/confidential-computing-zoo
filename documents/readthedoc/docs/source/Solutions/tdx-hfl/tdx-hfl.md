@@ -174,7 +174,8 @@ The model files generated during training will be saved in the `model` folder. I
 After training is complete, unmount the storage. Replace `<role>` with the role of the container (either `ps0`, `worker0`, or `worker1`). 
 
 ```shell
-export ROLE=<role>
+ROLE=<role>
+VIRTUAL_FS=/root/vfs
 cd /luks_tools
 ./unmount_encrypted_vfs.sh ${VIRTUAL_FS} ${ROLE}
 ```
