@@ -84,12 +84,22 @@ For Azure deployments:
 ```shell
 ./build_docker_image.sh azure
 ```
+NOTE: To specify the proxy server, set the `proxy_server` variable prior to the call to build_docker_image.sh, for example:
+      
+```
+proxy_server=http://proxyserver:port ./build_docker_image.sh azure
+```
 
 #### Default Cloud Deployments
 For other cloud deployments:
 
 ```shell
 ./build_docker_image.sh default
+```
+NOTE: To specify the proxy server, set the `proxy_server` variable prior to the call to build_docker_image.sh, for example:
+      
+```
+proxy_server=http://proxyserver:port ./build_docker_image.sh default
 ```
 
 ***Notice:*** 
