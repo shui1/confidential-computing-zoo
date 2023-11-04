@@ -107,15 +107,24 @@ If you are using non-production version Intel CPU, please modify the Dockerfile 
 
 ### Start Containers
 
-Start three containers (ps0, worker0, worker1). Replace `<role>` with the role of the container (either `ps0`, `worker0`, or `worker1`).
+Start three containers (ps0, worker0, worker1). Replace `<role>` with the role of the container (either `ps0`, `worker0`, or `worker1`). Replace `<image_id>` with the image ID of the container built from the previous step.
+
+#### Azure Deployments
+For Azure deployments:
 
 ```shell
-export ROLE=<role>
-./start_container.sh ${ROLE}
+./start_container.azure.sh <role> <image_id>
+```
+
+#### Default Cloud Deployments
+For other cloud deployments:
+
+```shell
+./start_container.sh <role> <image_id>
 ```
 
 ### Configure Node Network Addresses
-In the case of deploying different distributed nodes on multiple VMs, you can configure the node IP addresses by modifying the `/hfl-tensorflow/train.py` in each container:
+If running in an environment with distributed nodes (for example, each container running on a separate VM), configure the node IP addresses by modifying the `/hfl-tensorflow/train.py` in each container:
 
 ```shell
 tf.app.flags.DEFINE_string("ps_hosts", "['localhost:60002']", "ps hosts")
@@ -131,7 +140,27 @@ tf.app.flags.DEFINE_string("worker_hosts", "['localhost:61002','localhost:61003'
 From each container configure attestation parameters.
 
 #### Azure Deployments
-For Azure deployments only, modify `/etc/azure_tdx_config.json` to specify your [Project Amber](https://aka.ms/tdxamber) API key: `"api_key": "your project amber api key"`.
+From each container, modify `/etc/azure_tdx_config.json` to configure the attestation verifier service parameters.
+
+To use [Intel Trust Authority](https://www.intel.com/content/www/us/en/security/trust-authority.html), modify `/etc/azure_tdx_config.json` as follows, specifying your Intel Trust Authority API key: `"api_key": "your project amber api key"`:
+
+```bash
+{
+  "attestation_url": "https://api.projectamber.intel.com/appraisal/v1/attest",
+  "attestation_provider": "amber",
+  "api_key": "your project amber api key"
+}
+```
+
+To use [Microsoft Azure Attestation](https://azure.microsoft.com/en-us/products/azure-attestation), modify `/etc/azure_tdx_config.json` as follows (an API key is not required):
+
+```bash
+{
+  "attestation_url": "https://sharedeus2e.eus2e.attest.azure.net/attest/TdxVm?api-version=2023-04-01-preview",
+  "attestation_provider": "maa",
+  "api_key": ""
+}
+```
 
 #### Default Cloud Deployments
 For other cloud deployments, modify the `PCCS server address` in the `sgx_default_qcnl.conf` file and fill in the PCCS address of the cloud and ignore the `<PCCS ip addr>` parameter.
@@ -194,8 +223,6 @@ You can see the training log information from the workers' terminals to confirm 
 At the beginning of training, remote attestation between the nodes will be performed. Only after the remote attestation succeeds can the training begin. After successful remote attestation, the terminal will output the following:
 
 ```shell
-Info: tdx_qv_get_quote_supplemental_data_size successfully returned.
-Info: App: tdx_qv_verify_quote successfully returned.
 Info: App: Verification completed successfully.
 ```
 
@@ -255,7 +282,7 @@ Microsoft Azure [DCesv5-series](https://azure.microsoft.com/en-us/updates/confid
 The following is the configuration of the DCesv5-series instance used:
 
 - Instance Type  : Standard_DC16es_v5
-- Instance Kernel: 6.2.0-1008-azure
+- Instance Kernel: 6.2.0-1016-azure
 - Instance OS    : Ubuntu 22.04 LTS Gen 2 TDX
 
 ***Notice:*** Azure DCesv5-series instances were used under private preview.
