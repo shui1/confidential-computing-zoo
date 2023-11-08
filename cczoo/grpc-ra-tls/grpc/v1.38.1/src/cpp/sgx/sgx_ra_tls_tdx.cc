@@ -273,6 +273,29 @@ int tdx_verify_quote(uint8_t *quote_buf, size_t quote_size) {
       return(ret);
     }
 
+    // Parse TEE-specific claims from JSON Web Token
+    std::vector<std::string> tokens;
+    boost::split(tokens, jwt_token, [](char c) {return c == '.'; });
+    if (tokens.size() < 3) {
+      fprintf(stderr, "Invalid JWT token\n");
+      return(ret);
+    }
+
+    json attestation_claims = json::parse(Utils::base64_decode(tokens[1]));
+    try {
+        std::string tdx_report_data;
+        if (Utils::case_insensitive_compare(provider, "maa"))
+            tdx_report_data = attestation_claims["tdx_report_data"].get<std::string>();
+        else if (Utils::case_insensitive_compare(provider, "amber"))
+            tdx_report_data = attestation_claims["amber_report_data"].get<std::string>();
+
+        cout << "TD report custom data: " << tdx_report_data << endl;
+    }
+    catch (...) {
+        fprintf(stderr, "JWT missing TD report custom data\n");
+        return(ret);
+    }
+
     grpc_printf("Info: App: Verification completed successfully.\n");
 
     return(0);
