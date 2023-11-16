@@ -140,7 +140,7 @@ static int tdx_generate_quote(
     *quote_buf = (uint8_t *)realloc(*quote_buf, quote_size);
     memcpy(*quote_buf, (uint8_t *)quote_bytes.data(), quote_size);
 
-    print_hex_dump("Info: TDX quote data\n", " ", *quote_buf, quote_size);
+    print_hex_dump("\nInfo: TDX quote data\n", " ", *quote_buf, quote_size);
 
     Uninitialize();
   }
@@ -219,7 +219,7 @@ int tdx_verify_quote(uint8_t *quote_buf, size_t quote_size, uint8_t **hash_buf) 
       return(ret);
     }
 
-    print_hex_dump("Info: Received TDX quote data\n", " ", quote_buf, quote_size);
+    print_hex_dump("\nInfo: Received TDX quote data\n", " ", quote_buf, quote_size);
 
     std::vector<unsigned char> quote_vector(quote_buf, quote_buf + quote_size);
     std::string encoded_quote = Utils::binary_to_base64url(quote_vector);
@@ -262,12 +262,15 @@ int tdx_verify_quote(uint8_t *quote_buf, size_t quote_size, uint8_t **hash_buf) 
             tdx_report_data = attestation_claims["tdx_report_data"].get<std::string>();
         else if (Utils::case_insensitive_compare(provider, "amber"))
             tdx_report_data = attestation_claims["amber_report_data"].get<std::string>();
+        cout << endl << "Info: Attestation claims:" << endl;
+        int indent = 4;
+        cout << attestation_claims.dump(indent) << endl;
 
 	// Return the public key hash, which is the first 32 bytes of the report data.
 	std::vector<unsigned char> hash_vector(tdx_report_data.begin(), tdx_report_data.end());
         *hash_buf = (uint8_t *)realloc(*hash_buf, SHA256_DIGEST_LENGTH);
         memcpy(*hash_buf, (uint8_t *)hash_vector.data(), SHA256_DIGEST_LENGTH);
-        print_hex_dump("Info: Public key hash from report data\n", " ", *hash_buf, SHA256_DIGEST_LENGTH);
+        print_hex_dump("\nInfo: Public key hash from report data\n", " ", *hash_buf, SHA256_DIGEST_LENGTH);
     }
     catch (...) {
         fprintf(stderr, "Error: JWT missing TD report custom data\n");
