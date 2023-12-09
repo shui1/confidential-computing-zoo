@@ -26,6 +26,14 @@
 #include <assert.h>
 #include <fstream>
 #include <cstring>
+#include <iostream>
+#include <sstream>
+#include <nlohmann/json.hpp>
+#include <chrono>
+#include "attest_utils/Utils.h"
+#include "attest_utils/AttestClient.h"
+#include "attest_utils/HttpClient.h"
+#include "boost/algorithm/hex.hpp"
 
 #ifdef SGX_RA_TLS_AZURE_TDX_BACKEND
 #include <azguestattestation1/AttestationClient.h>
@@ -33,20 +41,8 @@
 #endif
 
 #ifdef SGX_RA_TLS_GCP_TDX_BACKEND
-#include <iostream>
-#include <sstream>
 #include <iomanip>
-using namespace std;
 typedef unsigned char BYTE;
-#endif
-
-#if defined (SGX_RA_TLS_AZURE_TDX_BACKEND) || defined (SGX_RA_TLS_GCP_TDX_BACKEND)
-#include <nlohmann/json.hpp>
-#include <chrono>
-#include "attest_utils/Utils.h"
-#include "attest_utils/AttestClient.h"
-#include "attest_utils/HttpClient.h"
-#include "boost/algorithm/hex.hpp"
 #endif
 
 #ifdef SGX_RA_TLS_TDX_BACKEND
@@ -63,18 +59,21 @@ namespace sgx {
 #include <sgx_dcap_quoteverify.h>
 #endif
 
-#if defined (SGX_RA_TLS_AZURE_TDX_BACKEND) || defined (SGX_RA_TLS_GCP_TDX_BACKEND)
 using json = nlohmann::json;
 using namespace std;
 using namespace std::chrono;
-#endif
 
 const uint8_t g_att_key_id_list[256] = {0};
 
-static void tdx_gen_report_data(uint8_t *reportdata) {
-    srand(time(NULL));
+static void tdx_gen_report_data(uint8_t *reportdata, uint8_t *userdata, size_t userdata_size) {
+    uint8_t sha512_hash[SHA512_DIGEST_LENGTH];
+    SHA512_CTX sha512;
+    SHA512_Init(&sha512);
+    SHA512_Update(&sha512, userdata, userdata_size);
+    SHA512_Final(sha512_hash, &sha512);
+
     for (int i = 0; i < TDX_REPORT_DATA_SIZE; i++) {
-        reportdata[i] = rand();
+        reportdata[i] = userdata[i];
     }
 }
 
@@ -94,7 +93,6 @@ static void deleteFiles(const std::vector<std::string>& filenames) {
         std::remove(filename.c_str());
 }
 
-#if defined (SGX_RA_TLS_AZURE_TDX_BACKEND) || defined (SGX_RA_TLS_GCP_TDX_BACKEND)
 // input:  uint8_t *quote_buf
 // input:  size_t quote_size
 // output: uint8_t ** hash_buf
@@ -203,7 +201,7 @@ int tdx_verify_quote(uint8_t *quote_buf, size_t quote_size, uint8_t **hash_buf) 
         if (Utils::case_insensitive_compare(provider, "maa"))
             user_data = attestation_claims["x-ms-runtime"]["user-data"].get<std::string>();
         else if (Utils::case_insensitive_compare(provider, "ita"))
-#ifdef SGX_RA_TLS_GCP_TDX_BACKEND
+#if defined(SGX_RA_TLS_TDX_BACKEND) || defined(SGX_RA_TLS_GCP_TDX_BACKEND)
             user_data = attestation_claims["attester_held_data"].get<std::string>();
             user_data = Utils::base64_decode(user_data);
 #else
@@ -264,7 +262,7 @@ int tdx_verify_cert(const char *der_crt, size_t len) {
         goto out;
     }
 
-    cout << "\nInfo: Public key hash from user-data and X509 cert match.\n" << endl; 
+    cout << "\nInfo: Public key hash from user-data and X509 cert match.\n" << endl;
 
     // ret = verify_measurement((const char *)&p_rep_body->mr_enclave,
     //                          (const char *)&p_rep_body->mr_signer,
@@ -275,7 +273,6 @@ out:
     BIO_free(bio);
     return ret;
 }
-#endif
 
 #ifdef SGX_RA_TLS_AZURE_TDX_BACKEND
 // input:  uint8_t *hash
@@ -445,7 +442,7 @@ static int tdx_generate_quote(
 
     if (status != 0) {
         std::cerr << "Error executing sed command." << std::endl;
-	return(ret);
+        return(ret);
     }
 
     // Open the .dat file in binary mode
@@ -514,17 +511,20 @@ static int tdx_generate_quote(
     tdx_report_t tdx_report = {{0}};
     tdx_uuid_t selected_att_key_id = {0};
 
-    tdx_gen_report_data(report_data.d);
-    // print_hex_dump("TDX report data\n", " ", report_data.d, sizeof(report_data.d));
+    tdx_gen_report_data(report_data.d, hash, SHA256_DIGEST_LENGTH);
+
+    print_hex_dump("TDX report data\n", " ", report_data.d, sizeof(report_data.d));
 
     if (TDX_ATTEST_SUCCESS != tdx_att_get_report(&report_data, &tdx_report)) {
         grpc_fprintf(stderr, "failed to get the report.\n");
         ret = 0;
     }
-    // print_hex_dump("TDX report\n", " ", tdx_report.d, sizeof(tdx_report.d));
+     print_hex_dump("TDX report\n", " ", tdx_report.d, sizeof(tdx_report.d));
+
+    uint8_t *data_buf = nullptr;
 
     if (TDX_ATTEST_SUCCESS != tdx_att_get_quote(&report_data, NULL, 0, &selected_att_key_id,
-        quote_buf, &quote_size, 0)) {
+        &data_buf, &quote_size, 0)) {
         grpc_fprintf(stderr, "failed to get the quote.\n");
         ret = 0;
     }
@@ -532,14 +532,30 @@ static int tdx_generate_quote(
 
     // printf("tdx_generate_quote, sizeof %d, quote_size %d\n", sizeof(*quote_buf), quote_size);
 
-    realloc(*quote_buf, quote_size+SHA256_DIGEST_LENGTH);
-    memcpy((*quote_buf)+quote_size, hash, SHA256_DIGEST_LENGTH);
-    quote_size += SHA256_DIGEST_LENGTH;
+    // Convert hash to hex string.
+    std::ostringstream user_data;
+    user_data << std::hex << std::setfill('0');
+    for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        user_data << std::setw(2) << static_cast<int>(hash[i]);
+    }
+    std::string encoded_user_data = Utils::base64_encode(user_data.str());
+    std::vector<unsigned char> user_data_bytes = Utils::base64url_to_binary(encoded_user_data);
+
+    // claims_size is size of hex string representation of 32 byte hash
+    uint32_t claims_size = SHA256_DIGEST_LENGTH * 2;
+    *quote_buf = (uint8_t *)realloc(*quote_buf, quote_size + claims_size + 8);
+    memcpy(*quote_buf, (uint8_t *)&quote_size, 4);
+    memcpy(*quote_buf + 4, (uint8_t *)&claims_size, 4);
+    memcpy(*quote_buf + 8, data_buf, quote_size);
+    memcpy(*quote_buf + 8 + quote_size, (uint8_t *)user_data_bytes.data(), claims_size);
+    quote_size += claims_size + 8;
+
+    print_hex_dump("TDX quote data\n", " ", *quote_buf, quote_size);
 
     // printf("tdx_generate_quote, sizeof %d, quote_size %d\n", sizeof(*quote_buf), quote_size);
     return ret;
 };
-
+#if 0
 int tdx_verify_quote(uint8_t *quote_buf, size_t quote_size) {
     bool use_qve = false;
     (void)(use_qve);
@@ -667,6 +683,8 @@ out:
     BIO_free(bio);
     return ret;
 }
+#endif
+
 #endif // SGX_RA_TLS_TDX_BACKEND
 
 std::vector<std::string> tdx_generate_key_cert() {

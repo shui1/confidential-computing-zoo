@@ -35,8 +35,8 @@ RUN yum install -y python3 python3-devel && \
 
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
-ENV DCAP_VERSION=1.15
-RUN wget https://download.01.org/intel-sgx/sgx-dcap/${DCAP_VERSION}/linux/distro/centos-stream/sgx_rpm_local_repo.tgz && \
+ENV DCAP_VERSION=1.18
+RUN wget https://download.01.org/intel-sgx/sgx-dcap/${DCAP_VERSION}/linux/distro/centos-stream8/sgx_rpm_local_repo.tgz && \
     tar -xvf sgx_rpm_local_repo.tgz && \
     yum-config-manager --add-repo file://$(pwd)/sgx_rpm_local_repo/ && \
     yum install -y --setopt=install_weak_deps=False --nogpgcheck libtdx-attest && \

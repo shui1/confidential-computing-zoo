@@ -48,7 +48,7 @@ RUN pip3 install --upgrade pip \
     && pip3 install -r ${GRPC_PATH}/requirements.txt
 
 RUN yum makecache \
-    && yum install -y golang strace gdb ctags curl zip \
+    && yum install -y golang strace gdb ctags curl zip json-devel boost-devel \
     && yum clean all
 
 RUN rm -rf ~/.cache/* \

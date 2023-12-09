@@ -2872,6 +2872,7 @@ elseif(SGX_RA_TLS_BACKEND STREQUAL "OCCLUM")
   )
 elseif(SGX_RA_TLS_BACKEND STREQUAL "TDX")
   target_link_libraries(grpc++
+    curl
     tdx_attest
     sgx_dcap_quoteverify
     sgx_urts
